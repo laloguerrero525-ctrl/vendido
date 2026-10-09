@@ -1,0 +1,9 @@
+# Publicar el servidor en Render.com (plan gratis). Ver README.
+services:
+  - type: web
+    name: vendido
+    runtime: node
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/ping

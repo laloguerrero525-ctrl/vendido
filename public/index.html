@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#1b1740">
+  <meta name="description" content="VENDIDO: compra, construye, subasta y viaja en tren con tus amigos. Juego de bienes raíces multijugador por código de sala.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VENDIDO">
+  <title>VENDIDO</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Baloo+2:wght@600;800&family=Archivo+Black&family=Orbitron:wght@600;800&family=IM+Fell+English+SC&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }
+  </script>
+</head>
+<body>
+  <canvas id="scene" aria-label="Tablero"></canvas>
+
+  <!-- ============================== INICIO ============================== -->
+  <main id="home" class="screen" hidden>
+    <div class="home-wrap">
+      <h1 class="logo" aria-label="Vendido">
+        <span class="logo-stamp">VENDIDO</span>
+      </h1>
+      <p class="tagline">Compra, construye, subasta y viaja en tren. Tus amigos entran con un código.</p>
+
+      <form class="card home-card" id="homeForm" autocomplete="off">
+        <label class="field">
+          <span>Tu nombre</span>
+          <input id="nameInput" maxlength="16" placeholder="Ej. Lanza" required>
+        </label>
+        <div class="field">
+          <span>Tu color</span>
+          <div class="swatches" id="colorPick" role="radiogroup" aria-label="Color de ficha"></div>
+        </div>
+        <button class="btn btn-gold btn-big" type="submit" id="createBtn">Crear sala</button>
+        <div class="or"><span>o entra a la de un amigo</span></div>
+        <div class="join-row">
+          <input id="codeInput" class="code-input" maxlength="5" placeholder="CÓDIGO" inputmode="text" autocapitalize="characters" spellcheck="false" aria-label="Código de sala">
+          <button class="btn btn-ink" type="button" id="joinBtn">Entrar</button>
+        </div>
+        <button class="btn btn-ghost hidden" type="button" id="resumeBtn"></button>
+        <button class="btn btn-ghost" type="button" id="practiceBtn">Practicar contra bots (sin internet)</button>
+        <p class="form-error" id="homeError" role="alert"></p>
+      </form>
+
+      <nav class="home-links">
+        <button class="link" type="button" data-open="rules">Cómo se juega</button>
+        <button class="link" type="button" data-open="install">Instalar en el celular</button>
+        <button class="link" type="button" data-open="unlock">Tableros premium</button>
+      </nav>
+      <p class="mode-note" id="modeNote"></p>
+    </div>
+  </main>
+
+  <!-- ============================== SALA DE ESPERA ============================== -->
+  <main id="lobby" class="screen" hidden>
+    <div class="lobby-wrap">
+      <header class="lobby-head card">
+        <div>
+          <span class="muted">Código de la sala</span>
+          <div class="room-code" id="roomCode">-----</div>
+        </div>
+        <div class="code-actions">
+          <button class="btn btn-ink btn-sm" id="shareBtn" type="button">Invitar</button>
+          <button class="btn btn-ghost btn-sm" id="leaveBtn" type="button">Salir</button>
+        </div>
+      </header>
+
+      <section class="card">
+        <div class="sec-title"><h2>Jugadores</h2><span class="muted" id="playerCount"></span></div>
+        <ul class="players" id="lobbyPlayers"></ul>
+        <div class="row gap">
+          <button class="btn btn-ghost btn-sm host-only" id="addBotBtn" type="button">+ Agregar bot</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="sec-title"><h2>Tablero</h2></div>
+        <div class="maps" id="mapPick"></div>
+      </section>
+
+      <section class="card">
+        <div class="sec-title"><h2>Modo</h2></div>
+        <div class="modes" id="modePick"></div>
+      </section>
+
+      <section class="card">
+        <details class="settings" id="settingsBox">
+          <summary><h2>Reglas de la casa</h2><span class="muted">Dinero, crédito, rondas…</span></summary>
+          <div class="settings-grid" id="settingsGrid"></div>
+        </details>
+      </section>
+
+      <div class="lobby-start">
+        <button class="btn btn-gold btn-big host-only" id="startBtn" type="button">Empezar partida</button>
+        <p class="muted guest-only" id="waitHost">Esperando a que el anfitrión empiece…</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============================== JUEGO ============================== -->
+  <main id="game" class="screen" hidden>
+    <header class="hud-top" id="hudTop">
+      <div class="chips" id="chips"></div>
+      <button class="icon-btn" id="menuBtn" type="button" aria-label="Menú">☰</button>
+    </header>
+
+    <div class="view-tools" id="viewTools">
+      <button class="icon-btn" id="viewBtn" type="button" title="Cambiar vista 2D / 3D">3D</button>
+      <button class="icon-btn" id="rotBtn" type="button" title="Girar tablero">⟳</button>
+      <button class="icon-btn" id="centerBtn" type="button" title="Centrar">◎</button>
+    </div>
+
+    <div class="emotes" id="emotes"></div>
+    <div class="float-layer" id="floatLayer"></div>
+
+    <section class="dock" id="dock">
+      <div class="ticker" id="ticker"></div>
+      <div class="dock-card card" id="dockCard"></div>
+    </section>
+
+    <aside class="side-log card" id="sideLog">
+      <h2>Registro</h2>
+      <ol id="logList"></ol>
+    </aside>
+  </main>
+
+  <!-- capas -->
+  <div class="overlay" id="overlay" hidden></div>
+  <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true">
+    <div class="sheet-grip"></div>
+    <div class="sheet-body" id="sheetBody"></div>
+  </div>
+  <div class="auction" id="auction" hidden></div>
+  <div class="card-pop" id="cardPop" hidden></div>
+  <div class="stamp-layer" id="stampLayer" aria-live="polite"></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <div class="conn-banner" id="connBanner" hidden>Reconectando…</div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
