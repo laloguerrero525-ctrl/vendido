@@ -3,6 +3,7 @@
 //  • "directo" (P2P): el juego se abre como página estática (p. ej. GitHub Pages). El celular del
 //    anfitrión hace de servidor y los amigos se conectan a él con el código de sala (WebRTC/PeerJS).
 import { Room, makeCode, normalizeCode } from '../shared/room.js';
+import { SERVIDOR, TURN } from '../shared/config.js';
 
 const PEER_PREFIX = 'vendido-sala-';
 
@@ -33,7 +34,9 @@ export async function detectMode() {
   const q = new URLSearchParams(location.search);
   const forced = q.get('modo');
   if (forced === 'p2p' || forced === 'directo') return { mode: 'p2p' };
-  const remote = q.get('servidor') || localStorage.getItem('vendido.servidor') || '';
+  let saved = '';
+  try { saved = localStorage.getItem('vendido.servidor') || ''; } catch { /* */ }
+  const remote = q.get('servidor') || saved || SERVIDOR || '';
   if (remote) return { mode: 'server', url: remote.replace(/\/$/, '') };
   if (location.protocol === 'file:') return { mode: 'p2p' };
   try {
@@ -71,8 +74,9 @@ class ServerConnection {
       if (this.code && this.join) this.socket.emit('join', { code: this.code, pid: this.join.pid, profile: this.join.profile }, (r) => { if (!r.ok) deliver(this, { t: 'gone', text: r.error }); });
     });
     this.socket.on('disconnect', () => this.status('offline'));
+    // En el plan gratis de Render el servidor "se duerme" y tarda hasta ~1 min en despertar
     await new Promise((res, rej) => {
-      const t = setTimeout(() => rej(new Error('El servidor no responde.')), 8000);
+      const t = setTimeout(() => { this.socket.disconnect(); rej(new Error('El servidor no responde. Intenta de nuevo en un minuto.')); }, 70000);
       this.socket.once('connect', () => { clearTimeout(t); res(); });
     });
   }
@@ -105,7 +109,15 @@ class ServerConnection {
 function peerOptions() {
   const q = new URLSearchParams(location.search);
   const host = q.get('peerHost');
-  const opts = { debug: 0, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] } };
+  // STUN sirve cuando las redes permiten conexión directa (mismo WiFi, casi todas las casas).
+  // Con datos móviles casi siempre hace falta un relevo TURN: el de config.js y, de respaldo,
+  // el público de PeerJS (que no siempre está disponible).
+  const iceServers = [
+    { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+    ...(Array.isArray(TURN) ? TURN : []),
+    { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' },
+  ];
+  const opts = { debug: 0, config: { iceServers } };
   if (host) {
     opts.host = host;
     opts.port = Number(q.get('peerPort') || 9000);
@@ -207,6 +219,8 @@ class P2PHost {
   get label() { return 'Directo (tú eres el anfitrión)'; }
 }
 
+const NO_RELAY = 'Encontré la sala, pero sus redes no se pueden conectar directo (pasa mucho con datos móviles). Prueben en el mismo WiFi o usen el servidor (ver README).';
+
 class P2PGuest {
   constructor() {
     this.handlers = new Set();
@@ -224,7 +238,11 @@ class P2PGuest {
       const peer = new Peer(undefined, peerOptions());
       this.peer = peer;
       let done = false;
-      const t = setTimeout(() => { if (!done) { done = true; rej(new Error('La sala no respondió. Revisa el código.')); } }, 15000);
+      const fail = (msg) => { if (!done) { done = true; clearTimeout(t); rej(new Error(msg)); } };
+      const t = setTimeout(() => fail(this.reached
+        ? NO_RELAY
+        : 'La sala no respondió. Revisa el código y que el anfitrión tenga el juego abierto.'), 25000);
+      this.onIceFail = () => fail(NO_RELAY);
       peer.on('open', () => this.connect(() => { if (!done) { done = true; clearTimeout(t); res(); } }));
       peer.on('error', (e) => {
         if (!done) { done = true; clearTimeout(t); rej(new Error(peerError(e))); return; }
@@ -243,6 +261,11 @@ class P2PGuest {
       if (onOpen) onOpen();
     });
     conn.on('data', (m) => deliver(this, m));
+    // La sala existe pero los celulares no logran conectarse entre sí (redes distintas sin relevo)
+    conn.on('iceStateChanged', (st) => {
+      if (st === 'checking' || st === 'connected' || st === 'completed') this.reached = true;
+      if (st === 'failed' && !conn.open && this.onIceFail) this.onIceFail();
+    });
     conn.on('close', () => {
       if (this.closed) return;
       this.status('offline');
