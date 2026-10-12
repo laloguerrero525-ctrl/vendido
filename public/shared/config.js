@@ -14,6 +14,6 @@
 //        { urls: 'turn:relay.ejemplo.com:443?transport=tcp', username: 'usuario', credential: 'clave' },
 //      ];
 
-export const SERVIDOR = '';
+export const SERVIDOR = 'https://vendido-u2b7.onrender.com';
 
 export const TURN = [];

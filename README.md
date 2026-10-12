@@ -50,7 +50,9 @@ En el plan gratis el servidor “se duerme” si nadie juega en 15 minutos y tar
 
 Para que la versión de GitHub Pages use tu servidor de Render **automáticamente**, pon su dirección en `public/shared/config.js` (`SERVIDOR`) y publica (`npm run publicar`). Así funciona con cualquier red, incluidos datos móviles.
 
-> Para probarlo sin cambiar nada, abre: `https://TU-USUARIO.github.io/REPO/?servidor=https://vendido.onrender.com`
+El servidor actual es **https://vendido-u2b7.onrender.com** (ya está puesto en `config.js`).
+
+> Para probar otro servidor sin cambiar nada, abre: `https://TU-USUARIO.github.io/REPO/?servidor=https://vendido.onrender.com`
 
 ---
 
