@@ -39,6 +39,8 @@ El celular o compu de quien **crea la sala** hace de servidor; los demás se con
 
 Importante: quien crea la sala debe **dejar el juego abierto** mientras juegan. Si se cierra, puede reanudar la sala desde la pantalla de inicio (“Reanudar mi sala”).
 
+Ojo con las redes: en el **mismo WiFi** casi siempre conecta, pero entre casas distintas o con **datos móviles** los celulares muchas veces no se pueden conectar directo y hace falta un *relevo* (servidor TURN). El relevo público de PeerJS no siempre está disponible, así que si tus amigos ven “sus redes no se pueden conectar directo”, usa la Opción B o pon tu propio relevo en `public/shared/config.js` (`TURN`).
+
 ### Opción B — Render.com (servidor siempre en línea) · *modo servidor*
 1. Sube el proyecto a GitHub.
 2. En <https://render.com> → **New → Blueprint** → elige tu repo (usa `render.yaml`).
@@ -46,7 +48,9 @@ Importante: quien crea la sala debe **dejar el juego abierto** mientras juegan. 
 
 En el plan gratis el servidor “se duerme” si nadie juega en 15 minutos y tarda ~30 s en despertar.
 
-> Si tienes el juego en GitHub Pages pero quieres usar tu servidor de Render, abre: `https://TU-USUARIO.github.io/REPO/?servidor=https://vendido.onrender.com`
+Para que la versión de GitHub Pages use tu servidor de Render **automáticamente**, pon su dirección en `public/shared/config.js` (`SERVIDOR`) y publica (`npm run publicar`). Así funciona con cualquier red, incluidos datos móviles.
+
+> Para probarlo sin cambiar nada, abre: `https://TU-USUARIO.github.io/REPO/?servidor=https://vendido.onrender.com`
 
 ---
 
@@ -107,6 +111,7 @@ public/                 ← todo lo que ve el jugador (esto se publica)
   js/board3d.js         tablero 3D/2D con Three.js
   js/boardTexture.js    dibujo de las casillas
   js/net.js             conexión (servidor o directo)
+  shared/config.js      dirección del servidor y relevo TURN para jugar en línea
   shared/engine.js      ⭐ reglas del juego
   shared/maps.js        ⭐ los 4 tableros (nombres, colores, cartas)
   shared/room.js        salas por código y bots

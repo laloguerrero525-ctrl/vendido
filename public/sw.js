@@ -1,10 +1,10 @@
 // VENDIDO — service worker: permite instalar la app y abrirla sin internet
 // (el juego en línea sí necesita conexión). Estrategia: primero red, si falla, caché.
-const CACHE = 'vendido-v2';
+const CACHE = 'vendido-v3';
 const CORE = [
   './', './index.html', './css/app.css', './manifest.webmanifest',
   './js/main.js', './js/board3d.js', './js/boardTexture.js', './js/geometry.js', './js/game-ui.js', './js/net.js', './js/sfx.js', './js/util.js',
-  './shared/engine.js', './shared/maps.js', './shared/room.js', './shared/bot.js', './shared/premium.js', './shared/codigos.js',
+  './shared/engine.js', './shared/maps.js', './shared/room.js', './shared/bot.js', './shared/premium.js', './shared/codigos.js', './shared/config.js',
   './vendor/three.module.min.js', './vendor/addons/controls/MapControls.js', './vendor/addons/controls/OrbitControls.js',
   './vendor/addons/geometries/RoundedBoxGeometry.js', './vendor/peerjs.min.js', './vendor/socket.io.min.js',
   './icons/icon-192.png', './icons/icon-512.png',
